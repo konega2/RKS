@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+}
+
+model Piloto {
+  id            Int      @id @default(autoincrement())
+  nombre        String
+  apellidos     String
+  edad          Int
+  dni           String
+  socio         Boolean
+  entrenamiento Boolean
+  dorsal        Int?
+  foto          String?
+  preCarrera    PreCarrera?
+  vueltas       Vuelta[]
+  sanciones     Sancion[]
+  resultados    ResultadoCarrera[]
+  createdAt     DateTime @default(now())
+}
+
+model PreCarrera {
+  id         Int     @id @default(autoincrement())
+  pilotoId   Int     @unique
+  peso       Float?
+  lastre     Float?
+  kart       Int?
+  verificado Boolean @default(false)
+
+  piloto Piloto @relation(fields: [pilotoId], references: [id], onDelete: Cascade)
+}
+
+model Vuelta {
+  id        Int      @id @default(autoincrement())
+  pilotoId  Int
+  sesion    String
+  numero    Int
+  tiempo    Float
+  createdAt DateTime @default(now())
+
+  piloto Piloto @relation(fields: [pilotoId], references: [id], onDelete: Cascade)
+
+  @@index([sesion, pilotoId])
+  @@index([sesion, numero])
+}
+
+model Sancion {
+  id       Int    @id @default(autoincrement())
+  pilotoId Int
+  sesion   String
+  tipo     String
+  valor    Float
+  motivo   String
+  vuelta   Int?
+
+  piloto Piloto @relation(fields: [pilotoId], references: [id], onDelete: Cascade)
+
+  @@index([sesion, pilotoId])
+}
+
+model ResultadoCarrera {
+  id       Int @id @default(autoincrement())
+  pilotoId Int
+  posicion Int
+  puntos   Int
+
+  piloto Piloto @relation(fields: [pilotoId], references: [id], onDelete: Cascade)
+
+  @@index([posicion])
+  @@index([pilotoId])
+}
+
+model Evento {
+  id         Int      @id @default(autoincrement())
+  faseActual String
+  updatedAt  DateTime @updatedAt
+}
+
+model Fase {
+  id     Int    @id @default(autoincrement())
+  nombre String
+  hora   String
+
+  @@index([nombre])
+}
+
+model Anuncio {
+  id        Int      @id @default(autoincrement())
+  mensaje   String
+  createdAt DateTime @default(now())
+}

@@ -1,26 +1,114 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #09090b;
+  --foreground: #f4f4f5;
+  --rks-blue: #1f5eff;
+  --rks-blue-deep: #0f2a8a;
+  --rks-amber: #ffb100;
+  --rks-line: #1e2b4f;
+  --rks-surface: #0a0f1f;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-rks-blue: var(--rks-blue);
+  --color-rks-blue-deep: var(--rks-blue-deep);
+  --color-rks-amber: var(--rks-amber);
+  --color-rks-line: var(--rks-line);
+  --color-rks-surface: var(--rks-surface);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+body {
+  background:
+    radial-gradient(80% 55% at 50% -10%, color-mix(in oklab, var(--rks-blue) 24%, transparent), transparent),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@keyframes neon-lines-drift {
+  0% {
+    transform: translate3d(-6%, -6%, 0);
+  }
+  100% {
+    transform: translate3d(6%, 6%, 0);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.bg-neon-lines-blue {
+  background-image:
+    repeating-linear-gradient(
+      -32deg,
+      transparent 0 120px,
+      color-mix(in oklab, var(--rks-blue) 28%, transparent) 120px 122px,
+      transparent 122px 230px
+    );
+}
+
+.bg-neon-lines-blue-soft {
+  background-image:
+    repeating-linear-gradient(
+      -32deg,
+      transparent 0 190px,
+      color-mix(in oklab, var(--rks-blue-deep) 45%, transparent) 190px 191px,
+      transparent 191px 300px
+    );
+}
+
+.animate-neon-lines {
+  animation: neon-lines-drift 14s linear infinite alternate;
+}
+
+@keyframes podium-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.9);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.02);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes podium-glow-pulse {
+  0% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0.25;
+  }
+}
+
+.podium-card-base {
+  transform-origin: center bottom;
+}
+
+.podium-card-enter {
+  animation: podium-reveal 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.podium-glow {
+  background:
+    radial-gradient(circle at 50% 20%, color-mix(in oklab, var(--rks-blue) 45%, transparent), transparent 65%),
+    linear-gradient(180deg, color-mix(in oklab, var(--rks-blue) 22%, transparent), transparent 60%);
+  animation: podium-glow-pulse 2.2s ease-in-out infinite;
 }

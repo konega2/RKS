@@ -116,8 +116,16 @@ async function parsePhoto(formData: FormData) {
     };
   }
 
-  const filename = await saveUploadedPhoto(raw);
-  return { filename, error: undefined as string | undefined };
+  try {
+    const filename = await saveUploadedPhoto(raw);
+    return { filename, error: undefined as string | undefined };
+  } catch {
+    return {
+      filename: null,
+      error:
+        "No se pudo guardar la foto en este entorno. En Vercel necesitas almacenamiento externo (por ejemplo Vercel Blob).",
+    };
+  }
 }
 
 export async function createPilotAction(

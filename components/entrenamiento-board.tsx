@@ -23,6 +23,7 @@ import {
   type QualyRow,
   type RaceRow,
 } from "@/lib/entrenamiento";
+import { resolvePilotPhotoSrc } from "@/lib/pilot-photo";
 
 type EntrenamientoBoardProps = {
   initialSnapshot: EntrenamientoSnapshot;
@@ -475,7 +476,7 @@ export function EntrenamientoBoard({ initialSnapshot }: EntrenamientoBoardProps)
                   }
 
                   const pilot = pilotsById.get(row.pilotoId);
-                  const photo = pilot?.foto ? `/uploads/${pilot.foto}` : null;
+                  const photo = resolvePilotPhotoSrc(pilot?.foto);
                   const isWinner = row.pos === 1;
                   const pedestalHeight = row.pos === 1 ? "h-16" : row.pos === 2 ? "h-12" : "h-9";
 

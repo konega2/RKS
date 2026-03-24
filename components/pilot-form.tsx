@@ -7,6 +7,7 @@ import {
   buildPilotInitialState,
   type PilotFormState,
 } from "@/lib/pilot-form";
+import { resolvePilotPhotoSrc } from "@/lib/pilot-photo";
 
 type PilotFormProps = {
   formTitle: string;
@@ -32,7 +33,7 @@ export function PilotForm({
   );
   const [state, formAction, pending] = useActionState(action, initialState);
   const [preview, setPreview] = useState<string | null>(
-    currentPhoto ? `/uploads/${currentPhoto}` : null,
+    resolvePilotPhotoSrc(currentPhoto),
   );
   const objectUrlRef = useRef<string | null>(null);
 
@@ -140,7 +141,7 @@ export function PilotForm({
                 URL.revokeObjectURL(objectUrlRef.current);
                 objectUrlRef.current = null;
               }
-              setPreview(currentPhoto ? `/uploads/${currentPhoto}` : null);
+              setPreview(resolvePilotPhotoSrc(currentPhoto));
               return;
             }
 

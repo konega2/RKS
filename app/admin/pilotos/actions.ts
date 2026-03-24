@@ -1,8 +1,7 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { mkdir, unlink, writeFile } from "fs/promises";
-import path from "path";
+import { del, put } from "@vercel/blob";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -63,34 +62,29 @@ function validate(values: PilotFormValues): PilotFormErrors {
   return errors;
 }
 
-async function ensureUploadsDir() {
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadsDir, { recursive: true });
-  return uploadsDir;
-}
-
 async function saveUploadedPhoto(file: File): Promise<string> {
-  const uploadsDir = await ensureUploadsDir();
-  const extension = path.extname(file.name || "").toLowerCase();
-  const safeExt = extension && extension.length <= 5 ? extension : ".jpg";
-  const filename = `${Date.now()}-${randomUUID()}${safeExt}`;
-  const filePath = path.join(uploadsDir, filename);
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
+  const blob = await put(
+    `pilotos/${Date.now()}-${randomUUID()}-${file.name}`,
+    file,
+    {
+      access: "public",
+    },
+  );
 
-  await writeFile(filePath, buffer);
-
-  return filename;
+  return blob.url;
 }
 
-async function removePhotoIfExists(filename?: string | null) {
-  if (!filename) {
+async function removePhotoIfExists(photoUrl?: string | null) {
+  if (!photoUrl) {
     return;
   }
 
-  const filePath = path.join(process.cwd(), "public", "uploads", filename);
+  if (!photoUrl.startsWith("http://") && !photoUrl.startsWith("https://")) {
+    return;
+  }
+
   try {
-    await unlink(filePath);
+    await del(photoUrl);
   } catch {
     return;
   }

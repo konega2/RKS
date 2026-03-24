@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Card } from "@/components/card";
+import { resolvePilotPhotoSrc } from "@/lib/pilot-photo";
 
 type PilotCardProps = {
   id: number;
@@ -18,13 +19,15 @@ export function PilotCard({
   socio,
   foto,
 }: PilotCardProps) {
+  const photoSrc = resolvePilotPhotoSrc(foto);
+
   return (
     <Link href={`/admin/pilotos/${id}`} className="block">
       <Card className="group overflow-hidden rounded-2xl border-zinc-800/90 p-0 shadow-lg shadow-black/30 transition duration-300 md:hover:scale-[1.02] md:hover:border-amber-500/60 md:hover:shadow-amber-900/25">
         <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-950">
-          {foto ? (
+          {photoSrc ? (
             <Image
-              src={`/uploads/${foto}`}
+              src={photoSrc}
               alt={`Foto de ${nombre} ${apellidos}`}
               fill
               className="object-cover transition duration-300 md:group-hover:scale-110"

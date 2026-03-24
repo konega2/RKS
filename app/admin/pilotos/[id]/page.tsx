@@ -7,6 +7,7 @@ import { Card } from "@/components/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PilotForm } from "@/components/pilot-form";
 import { buildPilotInitialState } from "@/lib/pilot-form";
+import { resolvePilotPhotoSrc } from "@/lib/pilot-photo";
 import { prisma } from "@/lib/prisma";
 
 type EditPilotPageProps = {
@@ -56,6 +57,7 @@ export default async function EditPilotPage({ params }: EditPilotPageProps) {
     socio: piloto.socio ? "on" : "off",
     entrenamiento: piloto.entrenamiento ? "on" : "off",
   });
+  const photoSrc = resolvePilotPhotoSrc(piloto.foto);
 
   return (
     <section className="relative mx-auto w-full max-w-6xl space-y-5 md:space-y-7">
@@ -79,9 +81,9 @@ export default async function EditPilotPage({ params }: EditPilotPageProps) {
       <Card className="overflow-hidden border-rks-line bg-rks-surface/85 p-0 shadow-2xl shadow-black/35">
         <div className="grid md:grid-cols-[280px_minmax(0,1fr)] md:items-stretch">
           <div className="relative aspect-square w-full md:aspect-auto md:h-full">
-            {piloto.foto ? (
+            {photoSrc ? (
               <Image
-                src={`/uploads/${piloto.foto}`}
+                src={photoSrc}
                 alt={`Foto de ${piloto.nombre} ${piloto.apellidos}`}
                 fill
                 className="object-cover"

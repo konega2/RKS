@@ -6,14 +6,10 @@ import { prisma } from "@/lib/prisma";
 export const SESSION_COOKIE_NAME = "admin_session";
 
 export function validateAdminCredentials(username: string, password: string) {
-  const adminUser = process.env.ADMIN_USER;
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminUser = process.env.ADMIN_USER?.trim() || "admin";
+  const adminPassword = process.env.ADMIN_PASSWORD?.trim() || "admin123";
 
-  if (!adminUser || !adminPassword) {
-    return false;
-  }
-
-  return username === adminUser && password === adminPassword;
+  return username.trim() === adminUser && password === adminPassword;
 }
 
 export async function createAdminSession() {

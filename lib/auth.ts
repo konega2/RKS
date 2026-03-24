@@ -18,7 +18,8 @@ export async function createAdminSession() {
       data: {},
       select: { id: true },
     });
-  } catch {
+  } catch (error) {
+    console.error("createAdminSession failed", error);
     return null;
   }
 }
@@ -38,7 +39,8 @@ export async function isAuthenticated() {
     });
 
     return Boolean(session);
-  } catch {
+  } catch (error) {
+    console.error("isAuthenticated failed", error);
     return false;
   }
 }

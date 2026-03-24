@@ -21,9 +21,26 @@ export default async function EditPilotPage({ params }: EditPilotPageProps) {
     notFound();
   }
 
-  const piloto = await prisma.piloto.findUnique({
-    where: { id: pilotoId },
-  });
+  let piloto: {
+    id: number;
+    nombre: string;
+    apellidos: string;
+    edad: number;
+    dni: string;
+    dorsal: number | null;
+    socio: boolean;
+    entrenamiento: boolean;
+    foto: string | null;
+  } | null = null;
+
+  try {
+    piloto = await prisma.piloto.findUnique({
+      where: { id: pilotoId },
+    });
+  } catch (error) {
+    console.error("EditPilotPage query failed", error);
+    piloto = null;
+  }
 
   if (!piloto) {
     notFound();

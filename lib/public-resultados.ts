@@ -25,8 +25,17 @@ export type PublicResultadosSnapshot = {
   }>;
 };
 
+function createEmptyPublicResultadosSnapshot(): PublicResultadosSnapshot {
+  return {
+    generatedAt: new Date().toISOString(),
+    podium: [],
+    rows: [],
+  };
+}
+
 export async function getPublicResultadosSnapshot(): Promise<PublicResultadosSnapshot> {
-  const snapshot = await getCarreraSnapshot();
+  try {
+    const snapshot = await getCarreraSnapshot();
 
   const pilotById = new Map(
     snapshot.pilots.map((pilot) => [
@@ -64,9 +73,13 @@ export async function getPublicResultadosSnapshot(): Promise<PublicResultadosSna
     })
     .sort((left, right) => left.posicion - right.posicion);
 
-  return {
-    generatedAt: new Date().toISOString(),
-    podium: rows.filter((row) => row.posicion <= 3),
-    rows,
-  };
+    return {
+      generatedAt: new Date().toISOString(),
+      podium: rows.filter((row) => row.posicion <= 3),
+      rows,
+    };
+  } catch (error) {
+    console.error("getPublicResultadosSnapshot failed", error);
+    return createEmptyPublicResultadosSnapshot();
+  }
 }

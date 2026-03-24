@@ -5,12 +5,29 @@ import {
   computeRaceRows,
   ENTRENO_CARRERA_SESSION,
   ENTRENO_QUALY_SESSION,
+  type PilotBase,
   type EntrenamientoSnapshot,
 } from "@/lib/entrenamiento";
 import { prisma } from "@/lib/prisma";
 
+function createEmptyEntrenamientoSnapshot(replayLap: number | null): EntrenamientoSnapshot {
+  const pilots: PilotBase[] = [];
+
+  return {
+    generatedAt: new Date().toISOString(),
+    replayLap,
+    maxRaceLap: 0,
+    fastestRaceLap: null,
+    pilots,
+    qualyRows: [],
+    raceRows: [],
+    raceLapSummary: [],
+  };
+}
+
 export async function getEntrenamientoSnapshot(replayLap: number | null) {
-  const [pilots, laps, sanctions] = await Promise.all([
+  try {
+    const [pilots, laps, sanctions] = await Promise.all([
     prisma.piloto.findMany({
       orderBy: [{ nombre: "asc" }, { apellidos: "asc" }],
       include: {
@@ -73,14 +90,18 @@ export async function getEntrenamientoSnapshot(replayLap: number | null) {
       0,
     );
 
-  return {
-    generatedAt: new Date().toISOString(),
-    replayLap,
-    maxRaceLap,
-    fastestRaceLap: raceComputation.fastestRaceLap,
-    pilots: pilotBase,
-    qualyRows,
-    raceRows: raceComputation.rows,
-    raceLapSummary: raceComputation.lapSummary,
-  } satisfies EntrenamientoSnapshot;
+    return {
+      generatedAt: new Date().toISOString(),
+      replayLap,
+      maxRaceLap,
+      fastestRaceLap: raceComputation.fastestRaceLap,
+      pilots: pilotBase,
+      qualyRows,
+      raceRows: raceComputation.rows,
+      raceLapSummary: raceComputation.lapSummary,
+    } satisfies EntrenamientoSnapshot;
+  } catch (error) {
+    console.error("getEntrenamientoSnapshot failed", error);
+    return createEmptyEntrenamientoSnapshot(replayLap);
+  }
 }

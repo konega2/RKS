@@ -6,12 +6,29 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function PreCarreraPage() {
-  const pilots = await prisma.piloto.findMany({
-    orderBy: [{ nombre: "asc" }, { apellidos: "asc" }],
-    include: {
-      preCarrera: true,
-    },
-  });
+  let pilots: Array<{
+    id: number;
+    nombre: string;
+    apellidos: string;
+    preCarrera: {
+      peso: number | null;
+      kart: number | null;
+      lastre: number | null;
+      verificado: boolean;
+    } | null;
+  }> = [];
+
+  try {
+    pilots = await prisma.piloto.findMany({
+      orderBy: [{ nombre: "asc" }, { apellidos: "asc" }],
+      include: {
+        preCarrera: true,
+      },
+    });
+  } catch (error) {
+    console.error("PreCarreraPage query failed", error);
+    pilots = [];
+  }
 
   const boardKey = pilots
     .map(

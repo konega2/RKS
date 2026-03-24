@@ -4,12 +4,31 @@ import {
   buildStartingGrid,
   CARRERA_FINAL_SESSION,
   computeCarreraSnapshot,
+  type CarreraPilotBase,
   type CarreraSnapshot,
 } from "@/lib/carrera";
 import { prisma } from "@/lib/prisma";
 
+function createEmptyCarreraSnapshot(replayLap: number | null): CarreraSnapshot {
+  const pilots: CarreraPilotBase[] = [];
+
+  return {
+    generatedAt: new Date().toISOString(),
+    replayLap,
+    maxLap: 0,
+    targetLaps: 20,
+    pilots,
+    startingGrid: [],
+    raceRows: [],
+    raceLaps: [],
+    fastestLap: null,
+    savedResults: [],
+  };
+}
+
 export async function getCarreraSnapshot(replayLap: number | null = null) {
-  const [pilots, laps, sanctions, savedResults] = await Promise.all([
+  try {
+    const [pilots, laps, sanctions, savedResults] = await Promise.all([
     prisma.piloto.findMany({
       orderBy: [{ nombre: "asc" }, { apellidos: "asc" }],
       include: {
@@ -76,21 +95,25 @@ export async function getCarreraSnapshot(replayLap: number | null = null) {
     replayLap,
   });
 
-  return {
-    generatedAt: new Date().toISOString(),
-    replayLap,
-    maxLap: raceComputation.maxLap,
-    targetLaps: 20,
-    pilots: pilotBase,
-    startingGrid,
-    raceRows: raceComputation.rows,
-    raceLaps: raceComputation.raceLaps,
-    fastestLap: raceComputation.fastestLap,
-    savedResults: savedResults.map((result: (typeof savedResults)[number]) => ({
-      pilotoId: result.pilotoId,
-      piloto: `${result.piloto.nombre} ${result.piloto.apellidos}`,
-      posicion: result.posicion,
-      puntos: result.puntos,
-    })),
-  } satisfies CarreraSnapshot;
+    return {
+      generatedAt: new Date().toISOString(),
+      replayLap,
+      maxLap: raceComputation.maxLap,
+      targetLaps: 20,
+      pilots: pilotBase,
+      startingGrid,
+      raceRows: raceComputation.rows,
+      raceLaps: raceComputation.raceLaps,
+      fastestLap: raceComputation.fastestLap,
+      savedResults: savedResults.map((result: (typeof savedResults)[number]) => ({
+        pilotoId: result.pilotoId,
+        piloto: `${result.piloto.nombre} ${result.piloto.apellidos}`,
+        posicion: result.posicion,
+        puntos: result.puntos,
+      })),
+    } satisfies CarreraSnapshot;
+  } catch (error) {
+    console.error("getCarreraSnapshot failed", error);
+    return createEmptyCarreraSnapshot(replayLap);
+  }
 }

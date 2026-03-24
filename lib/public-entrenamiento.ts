@@ -29,8 +29,20 @@ export type PublicEntrenamientoSnapshot = {
   fastestRaceLap: { pilotoId: number; tiempo: number } | null;
 };
 
+function createEmptyPublicEntrenamientoSnapshot(): PublicEntrenamientoSnapshot {
+  return {
+    generatedAt: new Date().toISOString(),
+    qualyRows: [],
+    qualyLapSummary: [],
+    raceRows: [],
+    raceLapSummary: [],
+    fastestRaceLap: null,
+  };
+}
+
 export async function getPublicEntrenamientoSnapshot(): Promise<PublicEntrenamientoSnapshot> {
-  const [pilots, laps, sanctions] = await Promise.all([
+  try {
+    const [pilots, laps, sanctions] = await Promise.all([
     prisma.piloto.findMany({
       orderBy: [{ nombre: "asc" }, { apellidos: "asc" }],
       include: {
@@ -119,12 +131,16 @@ export async function getPublicEntrenamientoSnapshot(): Promise<PublicEntrenamie
     replayLap: null,
   });
 
-  return {
-    generatedAt: new Date().toISOString(),
-    qualyRows,
-    qualyLapSummary,
-    raceRows: raceComputation.rows,
-    raceLapSummary: raceComputation.lapSummary,
-    fastestRaceLap: raceComputation.fastestRaceLap,
-  };
+    return {
+      generatedAt: new Date().toISOString(),
+      qualyRows,
+      qualyLapSummary,
+      raceRows: raceComputation.rows,
+      raceLapSummary: raceComputation.lapSummary,
+      fastestRaceLap: raceComputation.fastestRaceLap,
+    };
+  } catch (error) {
+    console.error("getPublicEntrenamientoSnapshot failed", error);
+    return createEmptyPublicEntrenamientoSnapshot();
+  }
 }

@@ -37,6 +37,36 @@ export type PublicHomeSnapshot = {
   totalPilotos: number;
 };
 
+function createEmptyPublicHomeSnapshot(): PublicHomeSnapshot {
+  return {
+    generatedAt: new Date().toISOString(),
+    eventTitle: "RKS Karting Event",
+    circuito: "Chiva",
+    faseActual: "registro",
+    faseActualLabel: EVENT_PHASE_LABEL.registro,
+    estadoActual: EVENT_PHASE_LABEL.registro,
+    estadoResumen: `${EVENT_PHASE_LABEL.entrenamiento} · Por definir`,
+    siguienteFase: {
+      nombre: "entrenamiento",
+      label: EVENT_PHASE_LABEL.entrenamiento,
+      hora: "Por definir",
+    },
+    horarios: {
+      registro: "",
+      entrenamiento: "",
+      qualy: "",
+      carrera: "",
+    },
+    anuncios: [],
+    anuncioDestacado: null,
+    ultimoResultado: {
+      sesion: "Última sesión",
+      top3: [],
+    },
+    totalPilotos: 0,
+  };
+}
+
 function getNextPhase(current: EventPhase): EventPhase {
   const currentIndex = EVENT_PHASES.indexOf(current);
   if (currentIndex === -1) {
@@ -113,32 +143,33 @@ async function ensureFases() {
 }
 
 export async function getPublicHomeSnapshot(): Promise<PublicHomeSnapshot> {
-  const [evento, fasesByName, anuncios, totalPilotos, resultados] = await Promise.all([
-    ensureEvento(),
-    ensureFases(),
-    prisma.anuncio.findMany({
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 20,
-      select: {
-        id: true,
-        mensaje: true,
-        createdAt: true,
-      },
-    }),
-    prisma.piloto.count(),
-    prisma.resultadoCarrera.findMany({
-      orderBy: [{ posicion: "asc" }],
-      take: 3,
-      include: {
-        piloto: {
-          select: {
-            nombre: true,
-            apellidos: true,
+  try {
+    const [evento, fasesByName, anuncios, totalPilotos, resultados] = await Promise.all([
+      ensureEvento(),
+      ensureFases(),
+      prisma.anuncio.findMany({
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: 20,
+        select: {
+          id: true,
+          mensaje: true,
+          createdAt: true,
+        },
+      }),
+      prisma.piloto.count(),
+      prisma.resultadoCarrera.findMany({
+        orderBy: [{ posicion: "asc" }],
+        take: 3,
+        include: {
+          piloto: {
+            select: {
+              nombre: true,
+              apellidos: true,
+            },
           },
         },
-      },
-    }),
-  ]);
+      }),
+    ]);
 
   const faseActualRaw = String(evento.faseActual ?? "");
   const faseActual: EventPhase = isEventPhase(faseActualRaw)
@@ -161,36 +192,40 @@ export async function getPublicHomeSnapshot(): Promise<PublicHomeSnapshot> {
       }
     : null;
 
-  return {
-    generatedAt: new Date().toISOString(),
-    eventTitle: "RKS Karting Event",
-    circuito: "Chiva",
-    faseActual,
-    faseActualLabel: EVENT_PHASE_LABEL[faseActual],
-    estadoActual: EVENT_PHASE_LABEL[faseActual],
-    estadoResumen: `${EVENT_PHASE_LABEL[siguienteFaseNombre]} · ${horarios[siguienteFaseNombre] || "Por definir"}`,
-    siguienteFase: {
-      nombre: siguienteFaseNombre,
-      label: EVENT_PHASE_LABEL[siguienteFaseNombre],
-      hora: horarios[siguienteFaseNombre] || "Por definir",
-    },
-    horarios,
-    anuncios: anuncios.map((anuncio: { id: number; mensaje: string; createdAt: Date }) => ({
-      id: anuncio.id,
-      mensaje: anuncio.mensaje,
-      createdAt: anuncio.createdAt.toISOString(),
-    })),
-    anuncioDestacado,
-    ultimoResultado: {
-      sesion: "Última sesión",
-      top3: resultados.map((item: {
-        posicion: number;
-        piloto: { nombre: string; apellidos: string };
-      }) => ({
-        posicion: item.posicion,
-        piloto: `${item.piloto.nombre} ${item.piloto.apellidos}`,
+    return {
+      generatedAt: new Date().toISOString(),
+      eventTitle: "RKS Karting Event",
+      circuito: "Chiva",
+      faseActual,
+      faseActualLabel: EVENT_PHASE_LABEL[faseActual],
+      estadoActual: EVENT_PHASE_LABEL[faseActual],
+      estadoResumen: `${EVENT_PHASE_LABEL[siguienteFaseNombre]} · ${horarios[siguienteFaseNombre] || "Por definir"}`,
+      siguienteFase: {
+        nombre: siguienteFaseNombre,
+        label: EVENT_PHASE_LABEL[siguienteFaseNombre],
+        hora: horarios[siguienteFaseNombre] || "Por definir",
+      },
+      horarios,
+      anuncios: anuncios.map((anuncio: { id: number; mensaje: string; createdAt: Date }) => ({
+        id: anuncio.id,
+        mensaje: anuncio.mensaje,
+        createdAt: anuncio.createdAt.toISOString(),
       })),
-    },
-    totalPilotos,
-  };
+      anuncioDestacado,
+      ultimoResultado: {
+        sesion: "Última sesión",
+        top3: resultados.map((item: {
+          posicion: number;
+          piloto: { nombre: string; apellidos: string };
+        }) => ({
+          posicion: item.posicion,
+          piloto: `${item.piloto.nombre} ${item.piloto.apellidos}`,
+        })),
+      },
+      totalPilotos,
+    };
+  } catch (error) {
+    console.error("getPublicHomeSnapshot failed", error);
+    return createEmptyPublicHomeSnapshot();
+  }
 }

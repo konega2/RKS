@@ -3,8 +3,19 @@ import "server-only";
 import { computeQualySnapshot, QUALY_OFICIAL_SESSION, type QualySnapshot } from "@/lib/qualy";
 import { prisma } from "@/lib/prisma";
 
+function createEmptyQualySnapshot(): QualySnapshot {
+  return {
+    generatedAt: new Date().toISOString(),
+    pilots: [],
+    rows: [],
+    fastestLap: null,
+    pilotLaps: [],
+  };
+}
+
 export async function getQualySnapshot() {
-  const [pilots, laps, sanctions] = await Promise.all([
+  try {
+    const [pilots, laps, sanctions] = await Promise.all([
     prisma.piloto.findMany({
       orderBy: [{ nombre: "asc" }, { apellidos: "asc" }],
       include: {
@@ -49,8 +60,12 @@ export async function getQualySnapshot() {
     sanctions,
   });
 
-  return {
-    generatedAt: new Date().toISOString(),
-    ...computed,
-  } satisfies QualySnapshot;
+    return {
+      generatedAt: new Date().toISOString(),
+      ...computed,
+    } satisfies QualySnapshot;
+  } catch (error) {
+    console.error("getQualySnapshot failed", error);
+    return createEmptyQualySnapshot();
+  }
 }

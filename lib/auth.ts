@@ -13,10 +13,14 @@ export function validateAdminCredentials(username: string, password: string) {
 }
 
 export async function createAdminSession() {
-  return prisma.adminSession.create({
-    data: {},
-    select: { id: true },
-  });
+  try {
+    return await prisma.adminSession.create({
+      data: {},
+      select: { id: true },
+    });
+  } catch {
+    return null;
+  }
 }
 
 export async function isAuthenticated() {
@@ -27,12 +31,16 @@ export async function isAuthenticated() {
     return false;
   }
 
-  const session = await prisma.adminSession.findUnique({
-    where: { id: sessionId },
-    select: { id: true },
-  });
+  try {
+    const session = await prisma.adminSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true },
+    });
 
-  return Boolean(session);
+    return Boolean(session);
+  } catch {
+    return false;
+  }
 }
 
 export async function requireAdminSession() {

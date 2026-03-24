@@ -31,6 +31,10 @@ export async function loginAction(
   }
 
   const session = await createAdminSession();
+  if (!session) {
+    return { error: "No se pudo abrir sesión. Revisa conexión a base de datos en Vercel." };
+  }
+
   const cookieStore = await cookies();
 
   cookieStore.set(SESSION_COOKIE_NAME, session.id, {

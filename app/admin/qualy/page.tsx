@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getQualySnapshot } from "@/app/admin/qualy/data";
 import { QualyBoard } from "@/components/qualy-board";
 
+export const dynamic = "force-dynamic";
+
 export default async function QualyPage() {
   const snapshot = await getQualySnapshot();
 

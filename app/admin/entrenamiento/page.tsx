@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getEntrenamientoSnapshot } from "@/app/admin/entrenamiento/data";
 import { EntrenamientoBoard } from "@/components/entrenamiento-board";
 
+export const dynamic = "force-dynamic";
+
 export default async function EntrenamientoPage() {
   const snapshot = await getEntrenamientoSnapshot(null);
 

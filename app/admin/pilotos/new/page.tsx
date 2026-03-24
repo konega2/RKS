@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { createPilotAction } from "@/app/admin/pilotos/actions";
 import { Card } from "@/components/card";
 import { PilotForm } from "@/components/pilot-form";
 
@@ -18,7 +17,6 @@ export default function NewPilotPage() {
         <PilotForm
           formTitle="Nuevo piloto"
           submitLabel="Guardar piloto"
-          action={createPilotAction}
         />
       </Card>
     </section>

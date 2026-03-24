@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Card } from "@/components/card";
-import { resolvePilotPhotoSrc } from "@/lib/pilot-photo";
 
 type PilotCardProps = {
   id: number;
@@ -19,7 +18,7 @@ export function PilotCard({
   socio,
   foto,
 }: PilotCardProps) {
-  const photoSrc = resolvePilotPhotoSrc(foto);
+  const photoSrc = foto;
 
   return (
     <Link href={`/admin/pilotos/${id}`} className="block">

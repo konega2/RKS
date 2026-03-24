@@ -6,14 +6,14 @@ export async function POST(req: Request) {
     const file = formData.get("file") as File;
 
     if (!file) {
-      return new Response("No file provided", { status: 400 });
+      return new Response("No file", { status: 400 });
     }
 
     const blob = await put(
       `pilotos/${Date.now()}-${file.name}`,
       file,
       {
-        access: "public"
+        access: "public",
       }
     );
 

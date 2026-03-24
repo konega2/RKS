@@ -2,12 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { deletePilotAction, updatePilotAction } from "@/app/admin/pilotos/actions";
+import { deletePilotAction } from "@/app/admin/pilotos/actions";
 import { Card } from "@/components/card";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PilotForm } from "@/components/pilot-form";
 import { buildPilotInitialState } from "@/lib/pilot-form";
-import { resolvePilotPhotoSrc } from "@/lib/pilot-photo";
 import { prisma } from "@/lib/prisma";
 
 type EditPilotPageProps = {
@@ -57,7 +56,7 @@ export default async function EditPilotPage({ params }: EditPilotPageProps) {
     socio: piloto.socio ? "on" : "off",
     entrenamiento: piloto.entrenamiento ? "on" : "off",
   });
-  const photoSrc = resolvePilotPhotoSrc(piloto.foto);
+  const photoSrc = piloto.foto;
 
   return (
     <section className="relative mx-auto w-full max-w-6xl space-y-5 md:space-y-7">
@@ -161,7 +160,6 @@ export default async function EditPilotPage({ params }: EditPilotPageProps) {
           <PilotForm
             formTitle="Editar piloto"
             submitLabel="Guardar cambios"
-            action={updatePilotAction}
             defaultValues={state.values}
             currentPhoto={piloto.foto}
           />

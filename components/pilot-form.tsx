@@ -1,21 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   buildPilotInitialState,
+  type PilotFormErrors,
   type PilotFormState,
 } from "@/lib/pilot-form";
-import { resolvePilotPhotoSrc } from "@/lib/pilot-photo";
 
 type PilotFormProps = {
   formTitle: string;
   submitLabel: string;
-  action: (
-    prevState: PilotFormState,
-    formData: FormData,
-  ) => Promise<PilotFormState>;
   defaultValues?: Partial<PilotFormState["values"]>;
   currentPhoto?: string | null;
 };
@@ -23,19 +21,27 @@ type PilotFormProps = {
 export function PilotForm({
   formTitle,
   submitLabel,
-  action,
   defaultValues,
   currentPhoto,
 }: PilotFormProps) {
+  const router = useRouter();
   const initialState = useMemo(
     () => buildPilotInitialState(defaultValues),
     [defaultValues],
   );
-  const [state, formAction, pending] = useActionState(action, initialState);
-  const [preview, setPreview] = useState<string | null>(
-    resolvePilotPhotoSrc(currentPhoto),
-  );
+  const [values, setValues] = useState(initialState.values);
+  const [errors, setErrors] = useState<PilotFormErrors>({});
+  const [pending, setPending] = useState(false);
+  const [preview, setPreview] = useState<string | null>(currentPhoto ?? null);
   const objectUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    setValues(initialState.values);
+  }, [initialState]);
+
+  useEffect(() => {
+    setPreview(currentPhoto ?? null);
+  }, [currentPhoto]);
 
   useEffect(() => {
     return () => {
@@ -45,15 +51,138 @@ export function PilotForm({
     };
   }, []);
 
+  const validate = (nextValues: PilotFormState["values"]) => {
+    const nextErrors: PilotFormErrors = {};
+
+    if (!nextValues.nombre.trim()) {
+      nextErrors.nombre = "El nombre es obligatorio.";
+    }
+
+    if (!nextValues.apellidos.trim()) {
+      nextErrors.apellidos = "Los apellidos son obligatorios.";
+    }
+
+    const edad = Number(nextValues.edad);
+    if (!nextValues.edad.trim()) {
+      nextErrors.edad = "La edad es obligatoria.";
+    } else if (!Number.isInteger(edad) || edad <= 0) {
+      nextErrors.edad = "La edad debe ser un número entero mayor que 0.";
+    }
+
+    if (!nextValues.dni.trim()) {
+      nextErrors.dni = "El DNI es obligatorio.";
+    }
+
+    if (nextValues.dorsal.trim()) {
+      const dorsal = Number(nextValues.dorsal);
+      if (!Number.isInteger(dorsal) || dorsal <= 0) {
+        nextErrors.dorsal = "El dorsal debe ser un número entero mayor que 0.";
+      }
+    }
+
+    return nextErrors;
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrors({});
+
+    const nextErrors = validate(values);
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    setPending(true);
+
+    try {
+      let fotoUrl: string | null = currentPhoto ?? null;
+      const fileInput = event.currentTarget.elements.namedItem("foto") as HTMLInputElement | null;
+      const file = fileInput?.files?.[0] ?? null;
+
+      if (file) {
+        if (!file.type.startsWith("image/")) {
+          setErrors({ foto: "La foto debe ser un archivo de imagen válido." });
+          setPending(false);
+          return;
+        }
+
+        if (file.size > 4 * 1024 * 1024) {
+          setErrors({ foto: "La foto supera el máximo permitido (4MB)." });
+          setPending(false);
+          return;
+        }
+
+        const fileFormData = new FormData();
+        fileFormData.append("file", file);
+
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: fileFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          setErrors({ form: "No se pudo subir la foto. Intenta nuevamente." });
+          setPending(false);
+          return;
+        }
+
+        const uploadData = (await uploadResponse.json()) as { url?: string };
+        fotoUrl = uploadData.url ?? null;
+      }
+
+      const payload = {
+        nombre: values.nombre.trim(),
+        apellidos: values.apellidos.trim(),
+        edad: Number(values.edad),
+        dni: values.dni.trim(),
+        dorsal: values.dorsal.trim() ? Number(values.dorsal) : null,
+        socio: values.socio === "on",
+        entrenamiento: values.entrenamiento === "on",
+        foto: fotoUrl,
+      };
+
+      const isEditing = Boolean(values.id);
+      const response = await fetch(
+        isEditing ? `/api/pilotos/${values.id}` : "/api/pilotos",
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setErrors({ form: data.error ?? "No se pudo guardar el piloto. Intenta nuevamente." });
+        setPending(false);
+        return;
+      }
+
+      router.push("/admin/pilotos");
+      router.refresh();
+    } catch {
+      setErrors({ form: "No se pudo guardar el piloto. Intenta nuevamente." });
+      setPending(false);
+      return;
+    }
+
+    setPending(false);
+  };
+
   return (
-    <form action={formAction} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <h2 className="text-lg font-bold uppercase tracking-[0.08em] text-white">{formTitle}</h2>
 
-      {state.values.id ? <input type="hidden" name="id" value={state.values.id} /> : null}
+      {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
 
-      {state.errors.form ? (
+      {errors.form ? (
         <p className="rounded-xl border border-red-900/70 bg-red-950/50 px-3 py-2 text-sm text-red-300">
-          {state.errors.form}
+          {errors.form}
         </p>
       ) : null}
 
@@ -62,16 +191,18 @@ export function PilotForm({
           label="Nombre"
           name="nombre"
           required
-          defaultValue={state.values.nombre}
-          error={state.errors.nombre}
+          value={values.nombre}
+          onChange={(value) => setValues((prev) => ({ ...prev, nombre: value }))}
+          error={errors.nombre}
         />
 
         <InputField
           label="Apellidos"
           name="apellidos"
           required
-          defaultValue={state.values.apellidos}
-          error={state.errors.apellidos}
+          value={values.apellidos}
+          onChange={(value) => setValues((prev) => ({ ...prev, apellidos: value }))}
+          error={errors.apellidos}
         />
 
         <InputField
@@ -80,16 +211,18 @@ export function PilotForm({
           type="number"
           required
           min={1}
-          defaultValue={state.values.edad}
-          error={state.errors.edad}
+          value={values.edad}
+          onChange={(value) => setValues((prev) => ({ ...prev, edad: value }))}
+          error={errors.edad}
         />
 
         <InputField
           label="DNI"
           name="dni"
           required
-          defaultValue={state.values.dni}
-          error={state.errors.dni}
+          value={values.dni}
+          onChange={(value) => setValues((prev) => ({ ...prev, dni: value }))}
+          error={errors.dni}
         />
 
         <InputField
@@ -97,8 +230,9 @@ export function PilotForm({
           name="dorsal"
           type="number"
           min={1}
-          defaultValue={state.values.dorsal}
-          error={state.errors.dorsal}
+          value={values.dorsal}
+          onChange={(value) => setValues((prev) => ({ ...prev, dorsal: value }))}
+          error={errors.dorsal}
         />
       </div>
 
@@ -108,7 +242,13 @@ export function PilotForm({
           <input
             type="checkbox"
             name="socio"
-            defaultChecked={state.values.socio === "on"}
+            checked={values.socio === "on"}
+            onChange={(event) =>
+              setValues((prev) => ({
+                ...prev,
+                socio: event.target.checked ? "on" : "off",
+              }))
+            }
             className="h-5 w-5 accent-rks-blue"
           />
         </label>
@@ -118,7 +258,13 @@ export function PilotForm({
           <input
             type="checkbox"
             name="entrenamiento"
-            defaultChecked={state.values.entrenamiento === "on"}
+            checked={values.entrenamiento === "on"}
+            onChange={(event) =>
+              setValues((prev) => ({
+                ...prev,
+                entrenamiento: event.target.checked ? "on" : "off",
+              }))
+            }
             className="h-5 w-5 accent-rks-blue"
           />
         </label>
@@ -141,7 +287,7 @@ export function PilotForm({
                 URL.revokeObjectURL(objectUrlRef.current);
                 objectUrlRef.current = null;
               }
-              setPreview(resolvePilotPhotoSrc(currentPhoto));
+              setPreview(currentPhoto ?? null);
               return;
             }
 
@@ -154,8 +300,8 @@ export function PilotForm({
             setPreview(objectUrl);
           }}
         />
-        {state.errors.foto ? (
-          <p className="text-sm text-red-400">{state.errors.foto}</p>
+        {errors.foto ? (
+          <p className="text-sm text-red-400">{errors.foto}</p>
         ) : null}
 
         {preview ? (
@@ -193,7 +339,8 @@ type InputFieldProps = {
   type?: string;
   min?: number;
   required?: boolean;
-  defaultValue?: string;
+  value: string;
+  onChange: (value: string) => void;
   error?: string;
 };
 
@@ -203,7 +350,8 @@ function InputField({
   type = "text",
   min,
   required,
-  defaultValue,
+  value,
+  onChange,
   error,
 }: InputFieldProps) {
   return (
@@ -217,7 +365,8 @@ function InputField({
         type={type}
         min={min}
         required={required}
-        defaultValue={defaultValue}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         className="h-12 w-full rounded-xl border border-rks-line bg-rks-surface px-4 text-base text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-rks-blue focus:ring-2 focus:ring-rks-blue/35"
       />
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
